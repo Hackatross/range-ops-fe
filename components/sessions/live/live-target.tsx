@@ -42,7 +42,7 @@ export function LiveTarget({
   return (
     <div
       className={cn(
-        "relative isolate aspect-square w-full overflow-hidden rounded-md border border-border/60 bg-card/40 backdrop-blur-sm",
+        "relative isolate aspect-square w-full overflow-hidden rounded-xl border border-primary/20 bg-background/70 shadow-[0_0_0_1px_color-mix(in_oklch,var(--primary)_8%,transparent),0_24px_80px_color-mix(in_oklch,var(--primary)_10%,transparent)] backdrop-blur-sm",
         className,
       )}
       style={{ maxWidth: size }}
@@ -50,14 +50,14 @@ export function LiveTarget({
       {/* Compass rose — decorative bezel, lowest z-index. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-2 text-primary/45"
+        className="pointer-events-none absolute inset-2 text-primary/50"
       >
         <CompassRose className="h-full w-full" size={undefined} />
       </div>
 
       {/* Target rings + shot pins — tinted `text-primary/60` so the rings
           stay visible while individual shots use their own paint. */}
-      <div className="absolute inset-6 text-primary/60">
+      <div className="absolute inset-5 text-primary/70">
         <TargetWithShots
           target={target}
           shots={validShots}

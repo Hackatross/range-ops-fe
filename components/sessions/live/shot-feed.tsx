@@ -52,8 +52,8 @@ export function ShotFeed({ shots, highlightShotId, className }: Props) {
   }
 
   return (
-    <ScrollArea className={cn("h-[340px] pr-1", className)}>
-      <ol className="flex flex-col gap-1.5">
+    <ScrollArea className={cn("h-[440px] pr-1", className)}>
+      <ol className="flex flex-col gap-2">
         {shots.map((shot) => (
           <ShotRow
             key={shot._id}
@@ -80,17 +80,17 @@ function ShotRow({ shot, highlight }: { shot: Shot; highlight: boolean }) {
       data-shot-row
       data-bullseye={is_bullseye ? "" : undefined}
       className={cn(
-        "grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded border border-border/40 bg-card/40 px-3 py-1.5 transition-colors",
-        highlight && "border-bullseye/60 bg-bullseye/15",
+        "grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-border/50 bg-background/45 px-3.5 py-3 transition-colors hover:border-primary/35 hover:bg-card/70",
+        highlight && "border-bullseye/70 bg-bullseye/15 shadow-[0_0_22px_color-mix(in_oklch,var(--bullseye)_18%,transparent)]",
       )}
       style={
         highlight ? { animation: "var(--animate-flash-bull)" } : undefined
       }
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2.5">
         <span
           className={cn(
-            "flex size-7 items-center justify-center rounded-md",
+            "flex size-8 items-center justify-center rounded-md ring-1 ring-border/40",
             is_bullseye
               ? "bg-bullseye/20 text-bullseye"
               : is_hit
@@ -106,12 +106,18 @@ function ShotRow({ shot, highlight }: { shot: Shot; highlight: boolean }) {
             <Flag size={14} />
           )}
         </span>
-        <MonoCode size="xs" tone="muted">
-          #{String(shot.shot_number).padStart(3, "0")}
-        </MonoCode>
+        <div className="flex flex-col gap-0.5">
+          <MonoCode size="xs" tone="muted">
+            #{String(shot.shot_number).padStart(3, "0")}
+          </MonoCode>
+          <MonoCode size="xs" tone="muted" className="hidden opacity-70 sm:inline">
+            {formatTime(shot.fired_at)}
+          </MonoCode>
+        </div>
       </div>
 
-      <div className="min-w-0 flex flex-wrap items-center gap-2 text-xs">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2 text-xs">
         <StatusPill spec={spec} size="sm" showDot={false}>
           {spec.symbol}
         </StatusPill>
@@ -122,13 +128,19 @@ function ShotRow({ shot, highlight }: { shot: Shot; highlight: boolean }) {
           {formatPoints(points)} pts
         </MonoCode>
         {deviation_cm != null ? (
-          <MonoCode size="xs" tone="muted">
+          <MonoCode size="xs" tone="muted" className="basis-full sm:basis-auto">
             ±{deviation_cm.toFixed(1)}cm
           </MonoCode>
         ) : null}
+        </div>
+        {shot.camera_data?.image_url || shot.laser_data ? (
+          <p className="mt-1 truncate text-xs text-muted-foreground">
+            {shot.camera_data?.image_url ? "camera frame attached" : "laser coordinate packet"}
+          </p>
+        ) : null}
       </div>
 
-      <MonoCode size="xs" tone="muted">
+      <MonoCode size="xs" tone="muted" className="hidden sm:inline">
         {formatTime(shot.fired_at)}
       </MonoCode>
     </li>

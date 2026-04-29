@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -42,6 +43,7 @@ interface Props {
 
 export function LiveSessionView({ sessionId }: Props) {
   const router = useRouter();
+  const now = useNow(1_000);
   const { item: session, isLoading: loadingSession } = useSession(sessionId);
   const { isConnected, lastShot, messageCount } =
     useLiveSessionFeed(sessionId);
@@ -92,7 +94,7 @@ export function LiveSessionView({ sessionId }: Props) {
   const duration = session.ended_at
     ? new Date(session.ended_at).getTime() -
       new Date(session.started_at).getTime()
-    : Date.now() - new Date(session.started_at).getTime();
+    : now - new Date(session.started_at).getTime();
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-6 sm:p-10">
@@ -210,7 +212,7 @@ export function LiveSessionView({ sessionId }: Props) {
 
       <SessionStats shots={shots} />
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_400px]">
         <SectionCard
           eyebrow="Live"
           title="Target"
@@ -221,13 +223,25 @@ export function LiveSessionView({ sessionId }: Props) {
           }
         >
           {target ? (
-            <div className="flex items-center justify-center py-2">
+            <div className="relative flex min-h-[520px] items-center justify-center overflow-hidden rounded-lg bg-[radial-gradient(circle_at_center,color-mix(in_oklch,var(--primary)_10%,transparent),transparent_58%)] py-6">
+              <div
+                aria-hidden
+                className="absolute inset-x-8 top-4 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent"
+              />
               <LiveTarget
                 target={target}
                 shots={shots}
                 flashShotId={lastShot?._id}
-                size={420}
+                size={520}
               />
+              <div className="absolute bottom-4 left-4 right-4 flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/50 bg-background/55 px-3 py-2 backdrop-blur">
+                <MonoCode size="xs" tone="muted">
+                  {shots.length} shots tracked
+                </MonoCode>
+                <MonoCode size="xs" tone="muted">
+                  coordinate overlay · cm from center
+                </MonoCode>
+              </div>
             </div>
           ) : (
             <Skeleton className="aspect-square w-full" />
@@ -253,6 +267,19 @@ export function LiveSessionView({ sessionId }: Props) {
       </div>
     </div>
   );
+}
+
+function useNow(intervalMs: number) {
+  const [now, setNow] = useState(() => new Date().getTime());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNow(new Date().getTime());
+    }, intervalMs);
+    return () => window.clearInterval(timer);
+  }, [intervalMs]);
+
+  return now;
 }
 
 function ContextChip({

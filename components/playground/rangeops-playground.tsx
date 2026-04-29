@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Activity,
   Cable,
@@ -24,11 +25,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  KpiGrid,
   MonoCode,
   PageHeader,
   SectionCard,
-  StatCard,
   StatusPill,
 } from "@/components/system";
 import { TargetRings } from "@/components/illustrations";
@@ -36,6 +35,7 @@ import { useShootersList } from "@/lib/api/shooters";
 import { useWeaponsList } from "@/lib/api/weapons";
 import { useTargetsList } from "@/lib/api/targets";
 import { useDevicesList } from "@/lib/api/devices";
+import { useAuthToken } from "@/lib/auth/use-auth-token";
 import { cn } from "@/lib/utils";
 import { formatAccuracy, formatCount, formatDeviation, formatScore } from "@/lib/format";
 import type {
@@ -63,10 +63,28 @@ type MockShot = {
 type FlowState = "idle" | "connected" | "streaming";
 
 export function RangeOpsPlayground() {
-  const shootersQuery = useShootersList({ limit: 50, sort: "name" });
-  const weaponsQuery = useWeaponsList({ limit: 50, sort: "weapon_code" });
-  const targetsQuery = useTargetsList({ limit: 50, sort: "target_code" });
-  const devicesQuery = useDevicesList({ limit: 50, sort: "device_id" });
+  // Subscribe to NextAuth session — without this, the component never re-renders
+  // when AuthBridge fills the token cache (the cache is module-level state and
+  // doesn't trigger re-renders on its own). Gating each list query on `isReady`
+  // also makes the auth race explicit instead of relying on a re-render side
+  // effect from elsewhere in the page.
+  const { isReady } = useAuthToken();
+  const shootersQuery = useShootersList(
+    { limit: 50, sort: "name" },
+    { enabled: isReady },
+  );
+  const weaponsQuery = useWeaponsList(
+    { limit: 50, sort: "weapon_code" },
+    { enabled: isReady },
+  );
+  const targetsQuery = useTargetsList(
+    { limit: 50, sort: "target_code" },
+    { enabled: isReady },
+  );
+  const devicesQuery = useDevicesList(
+    { limit: 50, sort: "device_id" },
+    { enabled: isReady },
+  );
 
   const shooters = (shootersQuery.items ?? []) as Shooter[];
   const weapons = (weaponsQuery.items ?? []) as Weapon[];
@@ -84,7 +102,9 @@ export function RangeOpsPlayground() {
   const weapon = weapons.find((w) => w._id === selectedWeaponId) ?? null;
   const target = targets.find((t) => t._id === selectedTargetId) ?? null;
   const device = devices.find((d) => d._id === selectedDeviceId) ?? null;
-  const canConnect = !!shooter && !!weapon && !!target && !!device;
+  // Device is optional — when no devices are registered yet, the playground
+  // falls back to a synthetic SIM device id so the simulation still works.
+  const canConnect = !!shooter && !!weapon && !!target;
 
   const stats = useMemo(() => {
     const total = shots.length;
@@ -104,22 +124,24 @@ export function RangeOpsPlayground() {
     };
   }, [shots]);
 
+  const effectiveDeviceId = device?.device_id ?? "SIM-LANE-01";
+
   const payload = useMemo(
     () => ({
-      device_id: device?.device_id ?? "LANE-01-LASER",
+      device_id: effectiveDeviceId,
       session_id: "simulated-session-id",
       hit_x_cm: shots.at(-1)?.x_cm ?? 0,
       hit_y_cm: shots.at(-1)?.y_cm ?? 0,
       laser_data: {
         measured_distance_m: target?.distance_meters ?? 100,
-        sensor_id: device?.device_id ?? "SIM-SENSOR",
+        sensor_id: effectiveDeviceId,
       },
       raw: {
         source: "RangeOps playground",
         mode: "local simulation only",
       },
     }),
-    [device, shots, target],
+    [effectiveDeviceId, shots, target],
   );
 
   function connect() {
@@ -129,10 +151,10 @@ export function RangeOpsPlayground() {
   }
 
   function simulateShot() {
-    if (!target || !device) return;
+    if (!target) return;
     const shot = makeMockShot({
       target,
-      deviceId: device.device_id,
+      deviceId: effectiveDeviceId,
       shotNumber: shots.length + 1,
     });
     setShots((prev) => [...prev, shot]);
@@ -159,7 +181,7 @@ export function RangeOpsPlayground() {
         }
       />
 
-      <div className="grid gap-4 lg:grid-cols-[380px_1fr]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(360px,420px)_minmax(0,1fr)]">
         <SectionCard
           eyebrow="Step 1"
           title="Connect existing data"
@@ -174,6 +196,15 @@ export function RangeOpsPlayground() {
               placeholder="Select shooter"
               items={shooters.map((s) => ({ value: s._id, label: s.name, meta: s.shooter_id }))}
               isLoading={shootersQuery.isLoading}
+              emptyHint={
+                <>
+                  No shooters yet — add one in{" "}
+                  <Link href="/shooters" className="underline">
+                    /shooters
+                  </Link>
+                  .
+                </>
+              }
             />
             <EntitySelect
               label="Weapon"
@@ -183,6 +214,15 @@ export function RangeOpsPlayground() {
               placeholder="Select weapon"
               items={weapons.map((w) => ({ value: w._id, label: w.weapon_code, meta: [w.type, w.model].filter(Boolean).join(" · ") }))}
               isLoading={weaponsQuery.isLoading}
+              emptyHint={
+                <>
+                  No weapons yet — register one in{" "}
+                  <Link href="/weapons" className="underline">
+                    /weapons
+                  </Link>
+                  .
+                </>
+              }
             />
             <EntitySelect
               label="Target"
@@ -192,15 +232,35 @@ export function RangeOpsPlayground() {
               placeholder="Select target"
               items={targets.map((t) => ({ value: t._id, label: t.name, meta: `${t.distance_meters}m · ${t.target_code}` }))}
               isLoading={targetsQuery.isLoading}
+              emptyHint={
+                <>
+                  No targets yet — define one in{" "}
+                  <Link href="/targets" className="underline">
+                    /targets
+                  </Link>
+                  .
+                </>
+              }
             />
             <EntitySelect
               label="Range device"
               icon={<Cpu size={14} />}
               value={selectedDeviceId}
               onValueChange={setSelectedDeviceId}
-              placeholder="Select device"
+              placeholder="Select device (optional)"
               items={devices.map((d) => ({ value: d._id, label: d.device_id, meta: `${d.type} · ${d.status}` }))}
               isLoading={devicesQuery.isLoading}
+              emptyHint={
+                <>
+                  No hardware registered. Register one in{" "}
+                  <Link href="/devices" className="underline">
+                    /devices
+                  </Link>
+                  , or proceed — the simulator will use a synthetic{" "}
+                  <code className="rounded bg-muted px-1">SIM-LANE-01</code>{" "}
+                  device id.
+                </>
+              }
             />
 
             <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
@@ -212,13 +272,18 @@ export function RangeOpsPlayground() {
 {JSON.stringify({
   server_url: "http://rangeops-server:8040",
   endpoint: "/hardware/ingest",
-  device_id: device?.device_id ?? "select-device",
+  device_id: effectiveDeviceId,
   active_session_id: canConnect ? "created-by-trainer" : "waiting-for-selection",
 }, null, 2)}
               </pre>
             </div>
 
-            <Button onClick={connect} disabled={!canConnect} className="w-full">
+            <Button
+              onClick={connect}
+              disabled={!canConnect}
+              variant={canConnect ? "default" : "outline"}
+              className="w-full disabled:opacity-80"
+            >
               <RadioTower className="size-4" />
               Connect mock lane
             </Button>
@@ -228,26 +293,48 @@ export function RangeOpsPlayground() {
         <div className="grid gap-4">
           <FlowDiagram state={flowState} />
 
-          <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
+          <div className="grid gap-4">
             <SectionCard
               eyebrow="Step 2"
               title="Mock hardware stream"
               description="Each shot creates the same coordinate shape a laser sensor or CV gateway would send."
               actions={
-                <Button onClick={simulateShot} disabled={flowState === "idle" || !target || !device}>
+                <Button
+                  onClick={simulateShot}
+                  disabled={flowState === "idle" || !target}
+                  variant={flowState !== "idle" && target ? "default" : "outline"}
+                  className="disabled:opacity-80"
+                >
                   <Zap className="size-4" />
                   Generate shot
                 </Button>
               }
             >
-              <KpiGrid cols={4}>
-                <StatCard icon={<Activity size={16} />} label="Shots" value={formatCount(stats.total)} />
-                <StatCard icon={<CheckCircle2 size={16} />} label="Accuracy" value={formatAccuracy(stats.accuracy)} tone={stats.total ? "accent" : "default"} />
-                <StatCard icon={<TargetIcon size={16} />} label="Score" value={formatScore(stats.score)} />
-                <StatCard icon={<Crosshair size={16} />} label="Avg dev" value={formatDeviation(stats.avgDeviation)} />
-              </KpiGrid>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <MetricTile
+                  icon={<Activity size={15} />}
+                  label="Shots"
+                  value={formatCount(stats.total)}
+                />
+                <MetricTile
+                  icon={<CheckCircle2 size={15} />}
+                  label="Accuracy"
+                  value={formatAccuracy(stats.accuracy)}
+                  active={stats.total > 0}
+                />
+                <MetricTile
+                  icon={<TargetIcon size={15} />}
+                  label="Score"
+                  value={formatScore(stats.score)}
+                />
+                <MetricTile
+                  icon={<Crosshair size={15} />}
+                  label="Avg dev"
+                  value={formatDeviation(stats.avgDeviation)}
+                />
+              </div>
 
-              <div className="mt-5 grid gap-4 md:grid-cols-[minmax(220px,360px)_1fr]">
+              <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(260px,360px)_minmax(260px,1fr)]">
                 <div className="flex items-center justify-center rounded-lg border border-border/60 bg-card/40 p-4">
                   {target ? (
                     <TargetRings
@@ -302,6 +389,7 @@ function EntitySelect({
   placeholder,
   items,
   isLoading,
+  emptyHint,
 }: {
   label: string;
   icon: React.ReactNode;
@@ -310,7 +398,21 @@ function EntitySelect({
   placeholder: string;
   items: Array<{ value: string; label: string; meta?: string }>;
   isLoading?: boolean;
+  emptyHint?: React.ReactNode;
 }) {
+  // Pass `items` to the root so `<Select.Value>` resolves the trigger label
+  // from the matching item instead of stringifying the raw `_id`.
+  const rootItems = useMemo(
+    () => items.map((i) => ({ value: i.value, label: i.label })),
+    [items],
+  );
+  const isEmpty = !isLoading && items.length === 0;
+  const triggerPlaceholder = isLoading
+    ? "Loading..."
+    : isEmpty
+      ? "Nothing to pick"
+      : placeholder;
+
   return (
     <label className="grid gap-2">
       <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
@@ -318,12 +420,13 @@ function EntitySelect({
         {label}
       </span>
       <Select
+        items={rootItems}
         value={value}
         onValueChange={(next) => onValueChange(next ?? "")}
-        disabled={isLoading || items.length === 0}
+        disabled={isLoading || isEmpty}
       >
-        <SelectTrigger className="h-10 w-full">
-          <SelectValue placeholder={isLoading ? "Loading..." : placeholder} />
+        <SelectTrigger className="h-10 w-full disabled:opacity-100 [&_[data-slot=select-value]]:text-foreground/80 [&_[data-slot=select-value][data-placeholder]]:text-muted-foreground/90">
+          <SelectValue placeholder={triggerPlaceholder} />
         </SelectTrigger>
         <SelectContent align="start" className="min-w-72">
           {items.map((item) => (
@@ -338,7 +441,52 @@ function EntitySelect({
           ))}
         </SelectContent>
       </Select>
+      {isEmpty && emptyHint ? (
+        <span className="text-xs leading-relaxed text-foreground/70 [&_a]:text-primary [&_a]:underline-offset-2 [&_code]:text-foreground">
+          {emptyHint}
+        </span>
+      ) : null}
     </label>
+  );
+}
+
+function MetricTile({
+  icon,
+  label,
+  value,
+  active = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+  active?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex min-h-20 items-center gap-3 rounded-xl border px-4 py-3",
+        active
+          ? "border-primary/40 bg-primary/10"
+          : "border-border/60 bg-card/50",
+      )}
+    >
+      <span
+        className={cn(
+          "flex size-9 shrink-0 items-center justify-center rounded-md",
+          active ? "bg-primary/15 text-primary" : "bg-primary/10 text-primary",
+        )}
+      >
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <p className="whitespace-nowrap font-mono text-[0.62rem] uppercase tracking-[0.22em] text-muted-foreground">
+          {label}
+        </p>
+        <MonoCode size="2xl" weight="semibold" className="leading-none">
+          {value}
+        </MonoCode>
+      </div>
+    </div>
   );
 }
 

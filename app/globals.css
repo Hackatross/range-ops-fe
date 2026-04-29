@@ -1,26 +1,280 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Fluid ships pre-built ESM components; its `styles.css` carries an
+ * `@source` directive that points Tailwind at fluid's compiled dist so
+ * its utility classes are discovered during compilation. Must be imported
+ * from the main Tailwind entry — not a scoped stylesheet — or fluid
+ * components ship unstyled.
+ */
+@import "@classytic/fluid/styles.css";
+
+/*
+ * RangeOps — tactical theme
+ * Dark-by-default. Navy + military green + amber + mission red.
+ * Monospace for codes/readouts; sans-serif for everything else.
+ */
+
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Base shadcn tokens (driven by --background, etc. below) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Tactical palette — domain colours used directly via bg-tactical, text-mission, etc. */
+  --color-surface-2: var(--surface-2);
+  --color-tactical: var(--tactical);
+  --color-tactical-foreground: var(--tactical-foreground);
+  --color-mission: var(--mission);
+  --color-mission-foreground: var(--mission-foreground);
+  --color-bullseye: var(--bullseye);
+  --color-hit: var(--hit);
+  --color-miss: var(--miss);
+  --color-pulse: var(--pulse);
+  --color-grid-line: var(--grid-line);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-display: var(--font-sans);
+
+  --radius-sm: calc(var(--radius) * 0.55);
+  --radius-md: calc(var(--radius) * 0.75);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.35);
+  --radius-2xl: calc(var(--radius) * 1.75);
+
+  /* Animations — referenced by --animate-* utilities */
+  --animate-pulse-dot: pulse-dot 1.6s ease-in-out infinite;
+  --animate-flash-bull: flash-bull 220ms ease-out;
+  --animate-scan-line: scan-line 4s linear infinite;
+
+  @keyframes pulse-dot {
+    0%, 100% {
+      box-shadow: 0 0 0 0 var(--color-pulse);
+      opacity: 1;
+    }
+    50% {
+      box-shadow: 0 0 0 6px transparent;
+      opacity: 0.85;
+    }
+  }
+
+  @keyframes flash-bull {
+    0% {
+      background-color: var(--bullseye);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  @keyframes scan-line {
+    from { transform: translateY(-100%); }
+    to   { transform: translateY(100%); }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/*
+ * Light theme (kept minimal — dark is the design target).
+ * Tactical accents reuse dark-mode values so brand colour stays consistent.
+ */
+:root {
+  --radius: 0.5rem;
+
+  --background: oklch(0.98 0.005 240);
+  --foreground: oklch(0.18 0.012 240);
+  --surface-2: oklch(0.95 0.006 240);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.012 240);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.012 240);
+
+  --primary: oklch(0.55 0.13 145);
+  --primary-foreground: oklch(0.99 0.005 240);
+  --secondary: oklch(0.94 0.006 240);
+  --secondary-foreground: oklch(0.2 0.012 240);
+  --muted: oklch(0.94 0.006 240);
+  --muted-foreground: oklch(0.45 0.01 240);
+  --accent: oklch(0.62 0.13 145 / 0.12);
+  --accent-foreground: oklch(0.55 0.13 145);
+  --destructive: oklch(0.58 0.21 25);
+
+  --border: oklch(0.88 0.01 240);
+  --input: oklch(0.88 0.01 240);
+  --ring: oklch(0.62 0.13 145);
+
+  --tactical: oklch(0.7 0.16 60);
+  --tactical-foreground: oklch(0.18 0.012 240);
+  --mission: oklch(0.58 0.21 25);
+  --mission-foreground: oklch(0.99 0.005 240);
+  --bullseye: oklch(0.78 0.2 30);
+  --hit: oklch(0.6 0.16 145);
+  --miss: oklch(0.55 0.06 240);
+  --pulse: oklch(0.62 0.18 145 / 0.6);
+  --grid-line: oklch(0.18 0.012 240 / 0.08);
+
+  --chart-1: oklch(0.62 0.13 145);
+  --chart-2: oklch(0.7 0.16 60);
+  --chart-3: oklch(0.55 0.18 250);
+  --chart-4: oklch(0.78 0.2 30);
+  --chart-5: oklch(0.58 0.21 25);
+
+  --sidebar: oklch(0.96 0.006 240);
+  --sidebar-foreground: oklch(0.18 0.012 240);
+  --sidebar-primary: oklch(0.55 0.13 145);
+  --sidebar-primary-foreground: oklch(0.99 0.005 240);
+  --sidebar-accent: oklch(0.93 0.008 240);
+  --sidebar-accent-foreground: oklch(0.18 0.012 240);
+  --sidebar-border: oklch(0.88 0.01 240);
+  --sidebar-ring: oklch(0.62 0.13 145);
+}
+
+/*
+ * Dark theme (default — see <html class="dark"> in app/layout.tsx).
+ * Near-black navy ground, tactical-instrument feel.
+ */
+.dark {
+  --background: oklch(0.14 0.01 240);
+  --foreground: oklch(0.95 0.005 240);
+  --surface-2: oklch(0.22 0.014 240);
+
+  --card: oklch(0.18 0.012 240);
+  --card-foreground: oklch(0.95 0.005 240);
+  --popover: oklch(0.18 0.012 240);
+  --popover-foreground: oklch(0.95 0.005 240);
+
+  --primary: oklch(0.62 0.13 145);
+  --primary-foreground: oklch(0.14 0.01 240);
+  --secondary: oklch(0.22 0.014 240);
+  --secondary-foreground: oklch(0.95 0.005 240);
+  --muted: oklch(0.22 0.014 240);
+  --muted-foreground: oklch(0.68 0.01 240);
+  --accent: oklch(0.62 0.13 145 / 0.18);
+  --accent-foreground: oklch(0.85 0.13 145);
+  --destructive: oklch(0.62 0.21 25);
+
+  --border: oklch(0.32 0.012 240 / 0.5);
+  --input: oklch(0.32 0.012 240 / 0.55);
+  --ring: oklch(0.62 0.13 145 / 0.6);
+
+  --tactical: oklch(0.72 0.16 60);
+  --tactical-foreground: oklch(0.14 0.01 240);
+  --mission: oklch(0.62 0.21 25);
+  --mission-foreground: oklch(0.99 0.005 240);
+  --bullseye: oklch(0.78 0.2 30);
+  --hit: oklch(0.72 0.16 145);
+  --miss: oklch(0.55 0.06 240);
+  --pulse: oklch(0.72 0.2 145 / 0.55);
+  --grid-line: oklch(0.95 0.005 240 / 0.06);
+
+  --chart-1: oklch(0.72 0.16 145);
+  --chart-2: oklch(0.78 0.16 60);
+  --chart-3: oklch(0.7 0.18 250);
+  --chart-4: oklch(0.78 0.2 30);
+  --chart-5: oklch(0.62 0.21 25);
+
+  --sidebar: oklch(0.12 0.012 240);
+  --sidebar-foreground: oklch(0.85 0.008 240);
+  --sidebar-primary: oklch(0.62 0.13 145);
+  --sidebar-primary-foreground: oklch(0.14 0.01 240);
+  --sidebar-accent: oklch(0.22 0.014 240);
+  --sidebar-accent-foreground: oklch(0.95 0.005 240);
+  --sidebar-border: oklch(0.32 0.012 240 / 0.5);
+  --sidebar-ring: oklch(0.62 0.13 145 / 0.6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans;
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-position: -1px -1px;
+  }
+
+  /* Codes, IDs, ring numbers — instrument-readout vibe. */
+  code, kbd, samp, .font-mono {
+    font-feature-settings: "ss01", "cv11";
+  }
+
+  /* Respect motion preferences across the whole app. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Reusable tactical utilities — opt-in via class names. */
+@utility tactical-grid {
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+@utility tactical-scan {
+  position: relative;
+  overflow: hidden;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      var(--pulse) 50%,
+      transparent 100%
+    );
+    pointer-events: none;
+    animation: var(--animate-scan-line);
+    opacity: 0.4;
+  }
 }

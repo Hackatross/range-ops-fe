@@ -1,7 +1,7 @@
 import { createCrudApi } from "@classytic/arc-next/api";
 import { createCrudHooks } from "@classytic/arc-next/hooks";
 import { withSoftDelete } from "@classytic/arc-next/presets/soft-delete";
-import { handleApiRequest } from "@classytic/arc-next/client";
+import { arcRequest } from "./request";
 import type { RangeSession } from "@/lib/types/domain";
 
 export interface StartSessionPayload {
@@ -33,27 +33,27 @@ export const sessionsApi = withSoftDelete(
 export async function startSession(
   data: StartSessionPayload,
 ): Promise<{ success: boolean; data: RangeSession }> {
-  return handleApiRequest("POST", "/sessions/start", { body: data });
+  return arcRequest("POST", "/sessions/start", { body: data });
 }
 
 export async function endSession(
   id: string,
   data: EndSessionPayload = {},
 ): Promise<{ success: boolean; data: RangeSession }> {
-  return handleApiRequest("POST", `/sessions/${id}/end`, { body: data });
+  return arcRequest("POST", `/sessions/${id}/end`, { body: data });
 }
 
 export async function abortSession(
   id: string,
   data: AbortSessionPayload = {},
 ): Promise<{ success: boolean; data: RangeSession }> {
-  return handleApiRequest("POST", `/sessions/${id}/abort`, { body: data });
+  return arcRequest("POST", `/sessions/${id}/abort`, { body: data });
 }
 
 export async function fetchSessionReport<TReport = unknown>(
   id: string,
 ): Promise<TReport> {
-  return handleApiRequest("GET", `/sessions/${id}/report`);
+  return arcRequest("GET", `/sessions/${id}/report`);
 }
 
 export const {

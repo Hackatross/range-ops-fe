@@ -28,6 +28,7 @@ import { useShooter } from "@/lib/api/shooters";
 import { useWeapon } from "@/lib/api/weapons";
 import { useTarget } from "@/lib/api/targets";
 import { useSessionShots } from "@/lib/api/shots";
+import { useAuthToken } from "@/lib/auth/use-auth-token";
 import { useLiveSessionFeed } from "@/lib/ws/session-feed";
 import { sessionStatusSpec } from "@/lib/domain/status";
 import { formatTime, formatDuration } from "@/lib/format";
@@ -44,7 +45,12 @@ interface Props {
 export function LiveSessionView({ sessionId }: Props) {
   const router = useRouter();
   const now = useNow(1_000);
-  const { item: session, isLoading: loadingSession } = useSession(sessionId);
+  // Subscribe to NextAuth so list/detail hooks below re-run once the bearer
+  // token cache fills (createCrudHooks gates on `!!token` internally).
+  const { isReady } = useAuthToken();
+  const { item: session, isLoading: loadingSession } = useSession(sessionId, {
+    enabled: isReady,
+  });
   const { isConnected, lastShot, messageCount } =
     useLiveSessionFeed(sessionId);
   const shotsQuery = useSessionShots(sessionId);
@@ -52,9 +58,15 @@ export function LiveSessionView({ sessionId }: Props) {
 
   // Resolve referenced docs once we have the session — these refetch
   // automatically when the session loads.
-  const { item: shooter } = useShooter(session?.shooter_id ?? null);
-  const { item: weapon } = useWeapon(session?.weapon_id ?? null);
-  const { item: target } = useTarget(session?.target_id ?? null);
+  const { item: shooter } = useShooter(session?.shooter_id ?? null, {
+    enabled: isReady,
+  });
+  const { item: weapon } = useWeapon(session?.weapon_id ?? null, {
+    enabled: isReady,
+  });
+  const { item: target } = useTarget(session?.target_id ?? null, {
+    enabled: isReady,
+  });
 
   const endSession = useEndSession();
   const abortSession = useAbortSession();

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { handleApiRequest } from "@classytic/arc-next/client";
 import { createCrudApi } from "@classytic/arc-next/api";
 import { createCrudHooks } from "@classytic/arc-next/hooks";
+import { arcRequest } from "./request";
 import { useAuthToken } from "@/lib/auth/use-auth-token";
 import type { Shot } from "@/lib/types/domain";
 
@@ -33,15 +33,14 @@ export const {
  * Pass `enabled` so the wizard / list can mount this in dependent layouts.
  */
 export function useSessionShots(sessionId: string | null) {
-  const { token, isReady } = useAuthToken();
+  const { isReady } = useAuthToken();
   return useQuery<Shot[]>({
     queryKey: ["sessions", sessionId, "shots"],
     enabled: isReady && !!sessionId,
     queryFn: async () => {
-      const json = await handleApiRequest<{ success: boolean; data: Shot[] }>(
+      const json = await arcRequest<{ success: boolean; data: Shot[] }>(
         "GET",
         `/sessions/${sessionId}/shots`,
-        { token },
       );
       return json.data ?? [];
     },
@@ -55,15 +54,15 @@ export function useSessionShots(sessionId: string | null) {
  * landing dashboard's recent-shots strip; not session-scoped.
  */
 export function useRecentShots(limit = 10) {
-  const { token, isReady } = useAuthToken();
+  const { isReady } = useAuthToken();
   return useQuery<Shot[]>({
     queryKey: ["shots", "recent", limit],
     enabled: isReady,
     queryFn: async () => {
-      const json = await handleApiRequest<{
+      const json = await arcRequest<{
         success: boolean;
         data: Shot[];
-      }>("GET", `/shots?sort=-fired_at&limit=${limit}`, { token });
+      }>("GET", `/shots?sort=-fired_at&limit=${limit}`);
       return json.data ?? [];
     },
     staleTime: 15_000,
@@ -89,7 +88,7 @@ export async function postManualShot(
   sessionId: string,
   data: ManualShotPayload,
 ): Promise<{ success: boolean; data: Shot }> {
-  return handleApiRequest("POST", `/sessions/${sessionId}/shots`, {
+  return arcRequest("POST", `/sessions/${sessionId}/shots`, {
     body: data,
   });
 }

@@ -26,6 +26,7 @@ import { useWeaponsList } from "@/lib/api/weapons";
 import { useTargetsList } from "@/lib/api/targets";
 import { useRecentShots } from "@/lib/api/shots";
 import { useLeaderboard } from "@/lib/api/reports";
+import { useAuthToken } from "@/lib/auth/use-auth-token";
 import { isHeartbeatFresh, formatAccuracy, formatCount } from "@/lib/format";
 import type {
   HardwareDevice,
@@ -52,15 +53,21 @@ export function DashboardClient() {
   // the health grid flips colour without polling.
   useDevicesFeed();
 
-  const sessionsQuery = useSessionsList({
-    status: "active",
-    sort: "-started_at",
-    limit: 6,
-  });
-  const devicesQuery = useDevicesList({ sort: "device_id", limit: 12 });
-  const shootersQuery = useShootersList({ limit: 1 });
-  const weaponsQuery = useWeaponsList({ limit: 1 });
-  const targetsQuery = useTargetsList({ limit: 1 });
+  // Subscribe to NextAuth so list hooks below re-evaluate `enabled: !!token`
+  // once the bearer token cache fills (createCrudHooks gates internally).
+  const { isReady } = useAuthToken();
+
+  const sessionsQuery = useSessionsList(
+    { status: "active", sort: "-started_at", limit: 6 },
+    { enabled: isReady },
+  );
+  const devicesQuery = useDevicesList(
+    { sort: "device_id", limit: 12 },
+    { enabled: isReady },
+  );
+  const shootersQuery = useShootersList({ limit: 1 }, { enabled: isReady });
+  const weaponsQuery = useWeaponsList({ limit: 1 }, { enabled: isReady });
+  const targetsQuery = useTargetsList({ limit: 1 }, { enabled: isReady });
   const recentShotsQuery = useRecentShots(8);
 
   const todayIso = useMemo(() => {

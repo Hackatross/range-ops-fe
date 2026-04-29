@@ -1,6 +1,6 @@
 import { createCrudApi } from "@classytic/arc-next/api";
 import { createCrudHooks } from "@classytic/arc-next/hooks";
-import { handleApiRequest } from "@classytic/arc-next/client";
+import { arcRequest } from "./request";
 import type { HardwareDevice } from "@/lib/types/domain";
 
 /**
@@ -52,7 +52,7 @@ export async function postDeviceHeartbeat(
   id: string,
   data: HeartbeatPayload = {},
 ): Promise<{ success: boolean; data: HardwareDevice }> {
-  return handleApiRequest("POST", `/hardware/devices/${id}/heartbeat`, {
+  return arcRequest("POST", `/hardware/devices/${id}/heartbeat`, {
     body: data,
   });
 }

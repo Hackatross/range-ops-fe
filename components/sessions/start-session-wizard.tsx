@@ -15,6 +15,7 @@ import { useShootersList } from "@/lib/api/shooters";
 import { useWeaponsList } from "@/lib/api/weapons";
 import { useTargetsList } from "@/lib/api/targets";
 import { useStartSession } from "@/lib/api/sessions";
+import { useAuthToken } from "@/lib/auth/use-auth-token";
 import type { Shooter, Target, Weapon } from "@/lib/types/domain";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -252,8 +253,10 @@ function ShooterStep({
   onChange: (s: Shooter | null) => void;
 }) {
   const [q, setQ] = useState("");
+  const { isReady } = useAuthToken();
   const result = useShootersList(
     q.trim() ? { limit: 25, "name[contains]": q.trim() } : { limit: 25 },
+    { enabled: isReady },
   );
   const items = (result.items ?? []) as Shooter[];
 
@@ -301,7 +304,8 @@ function WeaponStep({
   value: Weapon | null;
   onChange: (w: Weapon | null) => void;
 }) {
-  const result = useWeaponsList({ limit: 50 });
+  const { isReady } = useAuthToken();
+  const result = useWeaponsList({ limit: 50 }, { enabled: isReady });
   const items = (result.items ?? []) as Weapon[];
 
   return (
@@ -341,7 +345,8 @@ function TargetStep({
   value: Target | null;
   onChange: (t: Target | null) => void;
 }) {
-  const result = useTargetsList({ limit: 50 });
+  const { isReady } = useAuthToken();
+  const result = useTargetsList({ limit: 50 }, { enabled: isReady });
   const items = (result.items ?? []) as Target[];
 
   return (
